@@ -1,0 +1,1114 @@
+إليك كود تطبيق **لعبة الثعبان الاحترافية (Snake Game)** بالكامل، بلغة HTML5, CSS3, و JavaScript الحديثة مع دعم كامل للغة العربية، المظهر العصري (Glassmorphism)، التأثيرات الصوتية، وأدوات التحكم للهواتف والأجهزة الذكية.
+
+---
+
+File: index.html
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الثعبان الكلاسيكية</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- الهيدر ولوحة النتيجة -->
+        <header class="game-header">
+            <h1 class="game-title">لعبة <span>الثعبان</span></h1>
+            <div class="score-board">
+                <div class="score-card">
+                    <span class="label">النقاط</span>
+                    <span id="current-score" class="value">0</span>
+                </div>
+                <div class="score-card highlight">
+                    <span class="label">أعلى نتيجة</span>
+                    <span id="high-score" class="value">0</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button id="btn-sound" class="icon-btn" title="الصوت">
+                    <span class="icon">🔊</span>
+                </button>
+                <button id="btn-pause" class="icon-btn" title="إيقاف مؤقت" disabled>
+                    <span class="icon">⏸</span>
+                </button>
+                <button id="btn-settings" class="icon-btn" title="الإعدادات">
+                    <span class="icon">⚙️</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- منطقة اللعب -->
+        <main class="game-wrapper">
+            <div class="canvas-container">
+                <canvas id="game-canvas" width="400" height="400"></canvas>
+                
+                <!-- شاشة البداية -->
+                <div id="start-overlay" class="overlay active">
+                    <div class="overlay-content">
+                        <h2>مرحباً بك في لعبة الثعبان!</h2>
+                        <p>استخدم أسهم الكيبورد أو اللمس للتحكم بالثعبان واجمع الطعام لزيادة نقاطك.</p>
+                        <button id="btn-start" class="primary-btn">ابدأ اللعب الآن</button>
+                    </div>
+                </div>
+
+                <!-- شاشة الإيقاف المؤقت -->
+                <div id="pause-overlay" class="overlay hidden">
+                    <div class="overlay-content">
+                        <h2>اللعبة متوقفة مؤقتاً</h2>
+                        <button id="btn-resume" class="primary-btn">استئناف اللعب</button>
+                    </div>
+                </div>
+
+                <!-- شاشة الخسارة -->
+                <div id="gameover-overlay" class="overlay hidden">
+                    <div class="overlay-content">
+                        <h2 class="danger-text">انتهت اللعبة!</h2>
+                        <div class="final-score">النتيجة النهائية: <span id="final-score-val">0</span></div>
+                        <div id="new-high-score-msg" class="new-record hidden">🎉 رقم قياسي جديد! 🎉</div>
+                        <button id="btn-restart" class="primary-btn">إعادة اللعب 🔄</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أزرار التحكم باللمس للهواتف -->
+            <div class="touch-controls">
+                <div class="dpad-row">
+                    <button id="btn-up" class="dpad-btn">▲</button>
+                </div>
+                <div class="dpad-row">
+                    <button id="btn-left" class="dpad-btn">◄</button>
+                    <div class="dpad-center"></div>
+                    <button id="btn-right" class="dpad-btn">►</button>
+                </div>
+                <div class="dpad-row">
+                    <button id="btn-down" class="dpad-btn">▼</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- نافذة الإعدادات (Modal) -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>الإعدادات</h3>
+                <button id="btn-close-settings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label for="select-difficulty">مستوى الصعوبة:</label>
+                    <select id="select-difficulty">
+                        <option value="easy">سهل (بطيء)</option>
+                        <option value="medium" selected>متوسط</option>
+                        <option value="hard">صعب (سريع)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="select-walls">نمط الجدران:</label>
+                    <select id="select-walls">
+                        <option value="solid">صلبة (الموت عند اصطدام الجدار)</option>
+                        <option value="pass">مفتوحة (المرور من الجانب الآخر)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="select-theme">المظهر:</label>
+                    <select id="select-theme">
+                        <option value="neon">نيون عصري</option>
+                        <option value="classic">كلاسيكي أخضر</option>
+                        <option value="cyber">سايبر بانك</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
+```
+
+---
+
+File: styles.css
+
+```css
+:root {
+    --bg-color: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --primary-color: #10b981;
+    --primary-hover: #059669;
+    --accent-color: #f59e0b;
+    --danger-color: #ef4444;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --canvas-bg: #020617;
+    --snake-head: #34d399;
+    --snake-body: #10b981;
+    --food-color: #ef4444;
+    --bonus-food-color: #fbbf24;
+    --grid-line: rgba(255, 255, 255, 0.03);
+    --font-family: 'Cairo', sans-serif;
+}
+
+/* ثيمات مختلفة */
+body.theme-classic {
+    --bg-color: #1a2e1a;
+    --card-bg: rgba(10, 30, 10, 0.8);
+    --primary-color: #22c55e;
+    --canvas-bg: #051405;
+    --snake-head: #86efac;
+    --snake-body: #22c55e;
+}
+
+body.theme-cyber {
+    --bg-color: #180828;
+    --card-bg: rgba(45, 10, 75, 0.7);
+    --primary-color: #06b6d4;
+    --accent-color: #ec4899;
+    --canvas-bg: #0d021a;
+    --snake-head: #67e8f9;
+    --snake-body: #06b6d4;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* خلفية جمالية متحرّكة */
+.background-blobs {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+}
+
+.blob-1 {
+    width: 300px;
+    height: 300px;
+    background: var(--primary-color);
+    top: 10%;
+    right: 15%;
+}
+
+.blob-2 {
+    width: 250px;
+    height: 250px;
+    background: var(--accent-color);
+    bottom: 10%;
+    left: 15%;
+}
+
+/* الحاوية الرئيسية */
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* الهيدر */
+.game-header {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.game-title {
+    font-size: 1.3rem;
+    font-weight: 900;
+}
+
+.game-title span {
+    color: var(--primary-color);
+}
+
+.score-board {
+    display: flex;
+    gap: 12px;
+}
+
+.score-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.score-card.highlight .value {
+    color: var(--accent-color);
+}
+
+.score-card .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.score-card .value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.header-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: var(--text-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* رقعة اللعب */
+.game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 1/1;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--canvas-bg);
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* الشاشات المنبثقة (Overlays) */
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    max-width: 80%;
+}
+
+.overlay-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.overlay-content p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.danger-text {
+    color: var(--danger-color);
+}
+
+.primary-btn {
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.new-record {
+    color: var(--accent-color);
+    font-weight: bold;
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { transform: scale(0.95); }
+    to { transform: scale(1.05); }
+}
+
+/* أزرار التحكم باللمس */
+.touch-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.dpad-row {
+    display: flex;
+    gap: 10px;
+}
+
+.dpad-center {
+    width: 50px;
+    height: 50px;
+}
+
+.dpad-btn {
+    width: 55px;
+    height: 55px;
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    border-radius: 15px;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    touch-action: manipulation;
+}
+
+.dpad-btn:active {
+    background: var(--primary-color);
+    transform: scale(0.95);
+}
+
+/* النافذة المودال للأجهزة والخيارات */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.3s;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 380px;
+    padding: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.8rem;
+    cursor: pointer;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.setting-item label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.setting-item select {
+    background: #0f172a;
+    color: var(--text-color);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+/* تحسينات الاستجابة للشاشات الكبيرة */
+@media (min-width: 600px) {
+    .touch-controls {
+        display: none; /* إخفاء أسهم اللمس على أجهزة المكتبي */
+    }
+}
+```
+
+---
+
+File: audio.js
+
+```javascript
+/**
+ * نظام المؤثرات الصوتية باستخدام Web Audio API 
+ * دون الحاجة لملفات صوتية خارجية
+ */
+class SoundEffects {
+    constructor() {
+        this.ctx = null;
+        this.enabled = true;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    toggleSound() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+    }
+
+    playEat() {
+        if (!this.enabled) return;
+        this.init();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+    }
+
+    playBonus() {
+        if (!this.enabled) return;
+        this.init();
+
+        const notes = [400, 500, 600, 800];
+        notes.forEach((freq, index) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+
+            const startTime = this.ctx.currentTime + index * 0.05;
+            gain.gain.setValueAtTime(0.2, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + 0.08);
+        });
+    }
+
+    playGameOver() {
+        if (!this.enabled) return;
+        this.init();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.4);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.4);
+    }
+
+    playClick() {
+        if (!this.enabled) return;
+        this.init();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.03);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.03);
+    }
+}
+
+const audioFX = new SoundEffects();
+```
+
+---
+
+File: game.js
+
+```javascript
+/**
+ * المحرك الرئيسي للعبة الثعبان
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // شبكة اللعبة والكانفاس
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const GRID_SIZE = 20; // 20x20 مربعات
+    let CELL_SIZE = canvas.width / GRID_SIZE;
+
+    // عناصر القوائم والنصوص
+    const currentScoreEl = document.getElementById('current-score');
+    const highScoreEl = document.getElementById('high-score');
+    const finalScoreValEl = document.getElementById('final-score-val');
+    const newHighScoreMsg = document.getElementById('new-high-score-msg');
+
+    // الشاشات
+    const startOverlay = document.getElementById('start-overlay');
+    const pauseOverlay = document.getElementById('pause-overlay');
+    const gameoverOverlay = document.getElementById('gameover-overlay');
+    const settingsModal = document.getElementById('settings-modal');
+
+    // الأزرار
+    const btnStart = document.getElementById('btn-start');
+    const btnRestart = document.getElementById('btn-restart');
+    const btnResume = document.getElementById('btn-resume');
+    const btnPause = document.getElementById('btn-pause');
+    const btnSound = document.getElementById('btn-sound');
+    const btnSettings = document.getElementById('btn-settings');
+    const btnCloseSettings = document.getElementById('btn-close-settings');
+
+    // أدوات الإعدادات
+    const selectDifficulty = document.getElementById('select-difficulty');
+    const selectWalls = document.getElementById('select-walls');
+    const selectTheme = document.getElementById('select-theme');
+
+    // حالة اللعبة
+    let snake = [];
+    let food = { x: 0, y: 0 };
+    let bonusFood = null;
+    let bonusTimer = null;
+    let direction = 'RIGHT';
+    let nextDirection = 'RIGHT';
+    let score = 0;
+    let highScore = localStorage.getItem('snake_high_score') || 0;
+    let gameLoop = null;
+    let isPaused = false;
+    let isGameOver = false;
+    let isGameRunning = false;
+
+    // سرعة اللعبة حسب الصعوبة (بالملي ثانية)
+    const SPEED_MAP = {
+        easy: 140,
+        medium: 90,
+        hard: 60
+    };
+    let currentSpeed = SPEED_MAP.medium;
+
+    // تهيئة النتيجة القياسية العليا
+    highScoreEl.textContent = highScore;
+
+    // ضبط قياس الكانفاس بمرونة
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.width;
+        CELL_SIZE = canvas.width / GRID_SIZE;
+        if (!isGameRunning) drawInitialGrid();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // بداية اللعبة
+    function startGame() {
+        snake = [
+            { x: 5, y: 10 },
+            { x: 4, y: 10 },
+            { x: 3, y: 10 }
+        ];
+        direction = 'RIGHT';
+        nextDirection = 'RIGHT';
+        score = 0;
+        isGameOver = false;
+        isPaused = false;
+        isGameRunning = true;
+        currentScoreEl.textContent = '0';
+
+        if (bonusTimer) clearTimeout(bonusTimer);
+        bonusFood = null;
+
+        spawnFood();
+        
+        startOverlay.classList.add('hidden');
+        gameoverOverlay.classList.add('hidden');
+        pauseOverlay.classList.add('hidden');
+        btnPause.disabled = false;
+
+        if (gameLoop) clearInterval(gameLoop);
+        gameLoop = setInterval(update, currentSpeed);
+    }
+
+    // إنشاء الطعام
+    function spawnFood() {
+        food = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE)
+        };
+        // عدم إنتاج الطعام فوق جسم الثعبان
+        while (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
+            food = {
+                x: Math.floor(Math.random() * GRID_SIZE),
+                y: Math.floor(Math.random() * GRID_SIZE)
+            };
+        }
+
+        // فرصة 20% لإنشاء طعام مكافأة ذو وقت محدد
+        if (Math.random() < 0.2 && !bonusFood) {
+            spawnBonusFood();
+        }
+    }
+
+    function spawnBonusFood() {
+        bonusFood = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE)
+        };
+        bonusTimer = setTimeout(() => {
+            bonusFood = null;
+        }, 5000); // اختفاء المكافأة بعد 5 ثوانٍ
+    }
+
+    // تحديث حالة اللعبة (Game Loop Step)
+    function update() {
+        if (isPaused || isGameOver) return;
+
+        direction = nextDirection;
+        const head = { ...snake[0] };
+
+        switch (direction) {
+            case 'UP': head.y--; break;
+            case 'DOWN': head.y++; break;
+            case 'LEFT': head.x--; break;
+            case 'RIGHT': head.x++; break;
+        }
+
+        // التعامل مع الجدران
+        const wallMode = selectWalls.value;
+        if (wallMode === 'solid') {
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                return gameOver();
+            }
+        } else { // المرور العابر
+            if (head.x < 0) head.x = GRID_SIZE - 1;
+            if (head.x >= GRID_SIZE) head.x = 0;
+            if (head.y < 0) head.y = GRID_SIZE - 1;
+            if (head.y >= GRID_SIZE) head.y = 0;
+        }
+
+        // الاصطدام بالنفس
+        if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+            return gameOver();
+        }
+
+        snake.unshift(head);
+
+        // أكل الطعام العادي
+        if (head.x === food.x && head.y === food.y) {
+            score += 10;
+            currentScoreEl.textContent = score;
+            audioFX.playEat();
+            spawnFood();
+        } 
+        // أكل طعام المكافأة
+        else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
+            score += 30;
+            currentScoreEl.textContent = score;
+            audioFX.playBonus();
+            bonusFood = null;
+            clearTimeout(bonusTimer);
+        } else {
+            snake.pop(); // حركة طبيعية بدون زيادة للطول
+        }
+
+        render();
+    }
+
+    // رسم عناصر اللعبة على الكانفاس
+    function render() {
+        // مسح الكانفاس
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // رسم خلفية الشبكة
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid-line') || '#ffffff05';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= GRID_SIZE; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * CELL_SIZE, 0);
+            ctx.lineTo(i * CELL_SIZE, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, i * CELL_SIZE);
+            ctx.lineTo(canvas.width, i * CELL_SIZE);
+            ctx.stroke();
+        }
+
+        // رسم طعام المكافأة (إن وجد)
+        if (bonusFood) {
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bonus-food-color') || '#fbbf24';
+            ctx.shadowColor = '#fbbf24';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(
+                bonusFood.x * CELL_SIZE + CELL_SIZE / 2,
+                bonusFood.y * CELL_SIZE + CELL_SIZE / 2,
+                CELL_SIZE / 2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // رسم الطعام العادي
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--food-color') || '#ef4444';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(
+            food.x * CELL_SIZE + CELL_SIZE / 2,
+            food.y * CELL_SIZE + CELL_SIZE / 2,
+            CELL_SIZE / 2 - 3,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // رسم الثعبان
+        snake.forEach((segment, index) => {
+            const isHead = index === 0;
+            ctx.fillStyle = isHead 
+                ? getComputedStyle(document.documentElement).getPropertyValue('--snake-head') || '#34d399'
+                : getComputedStyle(document.documentElement).getPropertyValue('--snake-body') || '#10b981';
+
+            const radius = isHead ? 6 : 4;
+            const x = segment.x * CELL_SIZE;
+            const y = segment.y * CELL_SIZE;
+
+            // رسم مربع مستدير الحواف لجسم الثعبان
+            ctx.beginPath();
+            ctx.roundRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, radius);
+            ctx.fill();
+
+            // رسم عيني الثعبان للرأس
+            if (isHead) {
+                ctx.fillStyle = '#000';
+                const eyeOffset = CELL_SIZE / 4;
+                const eyeSize = 2;
+
+                let leftEye = { x: x + eyeOffset, y: y + eyeOffset };
+                let rightEye = { x: x + CELL_SIZE - eyeOffset, y: y + eyeOffset };
+
+                if (direction === 'DOWN') {
+                    leftEye = { x: x + eyeOffset, y: y + CELL_SIZE - eyeOffset };
+                    rightEye = { x: x + CELL_SIZE - eyeOffset, y: y + CELL_SIZE - eyeOffset };
+                } else if (direction === 'LEFT') {
+                    leftEye = { x: x + eyeOffset, y: y + eyeOffset };
+                    rightEye = { x: x + eyeOffset, y: y + CELL_SIZE - eyeOffset };
+                } else if (direction === 'RIGHT') {
+                    leftEye = { x: x + CELL_SIZE - eyeOffset, y: y + eyeOffset };
+                    rightEye = { x: x + CELL_SIZE - eyeOffset, y: y + CELL_SIZE - eyeOffset };
+                }
+
+                ctx.beginPath();
+                ctx.arc(leftEye.x, leftEye.y, eyeSize, 0, Math.PI * 2);
+                ctx.arc(rightEye.x, rightEye.y, eyeSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+    }
+
+    function drawInitialGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // عند انتهاء اللعبة
+    function gameOver() {
+        isGameOver = true;
+        isGameRunning = false;
+        clearInterval(gameLoop);
+        audioFX.playGameOver();
+
+        finalScoreValEl.textContent = score;
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('snake_high_score', highScore);
+            highScoreEl.textContent = highScore;
+            newHighScoreMsg.classList.remove('hidden');
+        } else {
+            newHighScoreMsg.classList.add('hidden');
+        }
+
+        btnPause.disabled = true;
+        gameoverOverlay.classList.remove('hidden');
+    }
+
+    // إيقاف واستئناف اللعبة
+    function togglePause() {
+        if (!isGameRunning || isGameOver) return;
+        isPaused = !isPaused;
+        audioFX.playClick();
+
+        if (isPaused) {
+            pauseOverlay.classList.remove('hidden');
+            btnPause.querySelector('.icon').textContent = '▶';
+        } else {
+            pauseOverlay.classList.add('hidden');
+            btnPause.querySelector('.icon').textContent = '⏸';
+        }
+    }
+
+    // إدارة مفاتيح التوجيه (الكيبورد)
+    function handleKeyPress(e) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+            e.preventDefault();
+        }
+
+        if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+            togglePause();
+            return;
+        }
+
+        if (isPaused || !isGameRunning) return;
+
+        switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                if (direction !== 'DOWN') nextDirection = 'UP';
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                if (direction !== 'UP') nextDirection = 'DOWN';
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                if (direction !== 'RIGHT') nextDirection = 'LEFT';
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                if (direction !== 'LEFT') nextDirection = 'RIGHT';
+                break;
+        }
+    }
+
+    // دعم السحب والإيماءات باللمس للشاشات الذكية (Swipe)
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+        if (!isGameRunning || isPaused) return;
+
+        let touchEndX = e.changedTouches[0].clientX;
+        let touchEndY = e.changedTouches[0].clientY;
+
+        let dx = touchEndX - touchStartX;
+        let dy = touchEndY - touchStartY;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // سحب أفقي
+            if (dx > 30 && direction !== 'LEFT') nextDirection = 'RIGHT';
+            else if (dx < -30 && direction !== 'RIGHT') nextDirection = 'LEFT';
+        } else {
+            // سحب رأسي
+            if (dy > 30 && direction !== 'UP') nextDirection = 'DOWN';
+            else if (dy < -30 && direction !== 'DOWN') nextDirection = 'UP';
+        }
+    }, { passive: true });
+
+    // ربط الأحداث بالأزرار
+    document.addEventListener('keydown', handleKeyPress);
+
+    btnStart.addEventListener('click', () => { audioFX.playClick(); startGame(); });
+    btnRestart.addEventListener('click', () => { audioFX.playClick(); startGame(); });
+    btnResume.addEventListener('click', togglePause);
+    btnPause.addEventListener('click', togglePause);
+
+    // ربط أزرار التحكم اللمسية (DPad)
+    document.getElementById('btn-up').addEventListener('click', () => { if (direction !== 'DOWN') nextDirection = 'UP'; });
+    document.getElementById('btn-down').addEventListener('click', () => { if (direction !== 'UP') nextDirection = 'DOWN'; });
+    document.getElementById('btn-left').addEventListener('click', () => { if (direction !== 'RIGHT') nextDirection = 'LEFT'; });
+    document.getElementById('btn-right').addEventListener('click', () => { if (direction !== 'LEFT') nextDirection = 'RIGHT'; });
+
+    // زر التحكم بالصوت
+    btnSound.addEventListener('click', () => {
+        const enabled = audioFX.toggleSound();
+        btnSound.querySelector('.icon').textContent = enabled ? '🔊' : '🔇';
+    });
+
+    // الإعدادات والمودال
+    btnSettings.addEventListener('click', () => {
+        audioFX.playClick();
+        if (isGameRunning && !isPaused) togglePause();
+        settingsModal.classList.remove('hidden');
+    });
+
+    btnCloseSettings.addEventListener('click', () => {
+        audioFX.playClick();
+        settingsModal.classList.add('hidden');
+    });
+
+    selectDifficulty.addEventListener('change', (e) => {
+        currentSpeed = SPEED_MAP[e.target.value];
+        if (isGameRunning) {
+            clearInterval(gameLoop);
+            gameLoop = setInterval(update, currentSpeed);
+        }
+    });
+
+    selectTheme.addEventListener('change', (e) => {
+        document.body.className = '';
+        if (e.target.value !== 'neon') {
+            document.body.classList.add(`theme-${e.target.value}`);
+        }
+        render();
+    });
+});
+```
+
+---
+
+### 🌟 مميزات التطبيق:
+1. **واجهة باللغة العربية (RTL):** تصميم وتنسيق متوافق مع الاتجاه من اليمين إلى اليسار واستخدام خط `Cairo` الأنيق.
+2. **تصميم متجاوب عصري (Glassmorphism):** يعمل على كافة الشاشات (الهواتف المحمولة، التابلت، والحواسيب).
+3. **أزرار تحكم متكاملة للهواتف:** لوحة أزرار افتراضية (D-Pad) + دعم الإيماءات والسحب باللمس (Swipe gestures).
+4. **تأثيرات صوتية تفاعلية (Web Audio API):** أصوات مدمجة برمجياً للأكل، المكافآت، الخسارة، والأزرار دون الحاجة لملفات externe MP3.
+5. **مستويات صعوبة وأنماط لعب متعددة:**
+   - خيارات الصعوبة (سهل، متوسط، صعب).
+   - نمط الجدران (صلبة تؤدي للموت أو عبور ينقل للجانب الآخر).
+   - ثيمات ألوان متعددة (نيون، كلاسيكي أخضر، سايبربانك).
+6. **حفظ أعلى نتيجة (High Score):** حفظ تلقائي في ذاكرة المتصفح `localStorage`.
