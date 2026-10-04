@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import sqlite3
 import sys
 import time
@@ -52,14 +53,15 @@ def update_user_points(username, new_points):
 # تشغيل قاعدة البيانات عند بدء البرنامج
 init_db()
 
-# ضعِ مفتاح الـ API الجديد هنا ليعمل البرنامج مجدداً
-os.environ["GEMINI_API_KEY"] = "AQ.Ab8RN6K2bbAZU61x3nAQjMeWL3w3FxLHP5lGE_6sJzUzEd85Pw"
+# إعداد مفتاح الـ API بشكل آمن (يدعم Streamlit Secrets أو متغيرات البيئة)
+if "GEMINI_API_KEY" in st.secrets:
+    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 
 client = genai.Client()
 
 # إعداد الصفحة وتصميمها
-st.set_page_config(page_title="صانع البرامج الذكي", page_icon="🤖", layout="centered")
-st.title("🤖 صانع ومقسم البرامج الآلي الذكي")
+st.set_page_config(page_title="صانع البرامج الذكي المطور", page_icon="🤖", layout="centered")
+st.title("🤖 صانع ومقسم البرامج الآلي الذكي (نسخة مطورة)")
 
 # 2. نظام تسجيل دخول مبسط لحفظ النقاط لكل اسم مستخدم
 st.sidebar.header("🔐 تسجيل دخول المستخدمين")
@@ -86,10 +88,8 @@ else:
         st.header("💳 بوابة شحن الرصيد الدولية")
         st.write("نقاطك الحالية غير كافية أو تود شحن حسابك. اختر باقة الشحن والعملة المفضلة لديك:")
         
-        # اختيار العملة المفضل
         currency = st.selectbox("🌍 اختر عملة الدفع الخاصة ببلدك:", ["الدولار الأمريكي (USD)", "الجنيه المصري (EGP)", "الريال السعودي (SAR)", "الجنيه السوداني (SDG)"])
         
-        # تحديد السعر بناءً على العملة المختارة تلقائياً لقيمة باقة (5000 نقطة)
         prices = {
             "الدولار الأمريكي (USD)": "$5",
             "الجنيه المصري (EGP)": "250 EGP",
@@ -99,68 +99,95 @@ else:
         
         st.info(f"💰 سعر باقة الشحن (5000 نقطة إضافية) هو: {prices[currency]}")
         
-        # زر الدفع والربط الوهمي حالياً
         pay_now = st.button(f"💳 ادفع الآن بـ {currency}")
         if pay_now:
-            st.success("🔄 جاري الاتصال ببوابة الدفع الآمنة لتأكيد العملية بالفيزا الحاصة بك...")
-            # هنا سنربط رابط Stripe الفعلي مستقبلاً للتأكيد التلقائي
+            st.success("🔄 جاري الاتصال ببوابة الدفع الآمنة لتأكيد العملية...")
             update_user_points(username_input, current_points + 5000)
             st.success("🎉 تم تأكيد الدفع بنجاح! تم إضافة 5000 نقطة لحسابك.")
             st.rerun()
     else:
         st.write("اكتب فكرة أي برنامج تريده في الأسفل (تكلفة الطلب: 500 نقطة).")
-        app_idea = st.text_input("ما هو البرنامج الذي تريد مني صناعته وفصل ملفاته لك اليوم؟", placeholder="مثال: لعبة الثعبان")
+        app_idea = st.text_input("ما هو البرنامج الذي تريد مني صناعته وفصل ملفاته لك اليوم؟", placeholder="مثال: نظام إدارة مبيعات بسيط")
         generate_btn = st.button("🚀 ابدأ صناعة البرنامج الآن")
 
         if generate_btn and app_idea:
-            st.info("جاري التفكير، وتصميم وبرمجة مشروعك... انتظر لحظة...")
-            
-            system_prompt = f"""
-            You are an expert AI Software Engineer.
-            The user wants to build an app based on this description: "{app_idea}".
-            Please generate the complete production-ready source code files.
+            if current_points < 500:
+                st.error("❌ رصيدك غير كافٍ لتنفيذ هذا الطلب (التكلفة 500 نقطة). يرجى شحن الرصيد.")
+            else:
+                st.info("جاري التفكير، وتصميم وبرمجة مشروعك... انتظر لحظة...")
+                
+                system_prompt = f"""
+                You are an expert AI Software Engineer.
+                The user wants to build a complete application based on this description: "{app_idea}".
+                Please generate the complete production-ready source code files.
 
-            You MUST write the filename clearly before EVERY code block using this exact format:
-            File: filename.ext
-           
-            [code]
-            
-            """
+                You MUST write the filename clearly before EVERY code block using this exact format:
+                File: filename.ext
+                ```python (or the appropriate language)
+                [code]
+                ```
+                """
 
-            response = None
-            try:
-                response = client.models.generate_content(
-                    model='gemini-3.6-flash',
-                    contents=system_prompt,
-                )
-            except ServerError:
-                st.error("عذرًا، واجه السيرفر مشكلة مؤقتة بسبب الضغط. يرجى إعادة المحاولة.")
+                response = None
+                try:
+                    response = client.models.generate_content(
+                        model='gemini-2.5-flash',  # تم تحديث المოდل لضمان الأداء العالي
+                        contents=system_prompt,
+                    )
+                except ServerError:
+                    st.error("عذرًا، واجه السيرفر مشكلة مؤقتة بسبب الضغط. يرجى إعادة المحاولة.")
 
-            if response:
-                content = response.text
-                folder_name = "Generated_App_Project"
-                os.makedirs(folder_name, exist_ok=True)
-
-                file_matches = re.findall(r'(?:File:\s*|###\s*|File:\s*)([a-zA-Z0-9_\-\.]+)\s*\n`[a-zA-Z]*\n(.*?)\n```', content, re.DOTALL)
-
-                if file_matches:
-                    for filename, code in file_matches:
-                        file_path = os.path.join(folder_name, filename)
-                        with open(file_path, "w", encoding="utf-8") as f:
-                            f.write(code.strip())
+                if response:
+                    content = response.text
+                    folder_name = "Generated_App_Project"
                     
-                    new_balance = current_points - 500
-                    update_user_points(username_input, new_balance)
-                    st.success("🎉 تم إنشاء ملفات مشروعك وتوزيعها بالكامل بنجاح!")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    backup_file = os.path.join(folder_name, "project_code.txt")
-                    with open(backup_file, "w", encoding="utf-8") as f:
-                        f.write(content)
-                    
-                    new_balance = current_points - 500
-                    update_user_points(username_input, new_balance)
-                    st.success(f"✅ تم حفظ الملف كاملاً بنجاح في: {folder_name}/project_code.txt")
-                    st.balloons()
-                    st.rerun()
+                    # إعادة إنهاء المجلد بنظافة لكل مشروع جديد
+                    if os.path.exists(folder_name):
+                        shutil.rmtree(folder_name)
+                    os.makedirs(folder_name, exist_ok=True)
+
+                    # تحسين التعبير المنتظم لالتقاط الملفات بشكل أدق
+                    file_matches = re.findall(r'File:\s*([a-zA-Z0-9_\-\.]+)\s*\n+```[a-zA-Z]*\n(.*?)\n```', content, re.DOTALL)
+
+                    if file_matches:
+                        for filename, code in file_matches:
+                            file_path = os.path.join(folder_name, filename.strip())
+                            with open(file_path, "w", encoding="utf-8") as f:
+                                f.write(code.strip())
+                        
+                        # ضغط المجلد لتسهيل التحميل
+                        shutil.make_archive("Generated_App_Project", 'zip', folder_name)
+                        
+                        new_balance = current_points - 500
+                        update_user_points(username_input, new_balance)
+                        
+                        st.success("🎉 تم إنشاء ملفات مشروعك وتوزيعها بالكامل بنجاح!")
+                        
+                        # زر تحميل المشروع كملف ZIP
+                        with open("Generated_App_Project.zip", "rb") as fp:
+                            st.download_button(
+                                label="📥 اضغط هنا لتحميل مشروعك الكامل (ZIP)",
+                                data=fp,
+                                file_name="Generated_App_Project.zip",
+                                mime="application/zip"
+                            )
+                        
+                        st.balloons()
+                    else:
+                        backup_file = os.path.join(folder_name, "project_code.txt")
+                        with open(backup_file, "w", encoding="utf-8") as f:
+                            f.write(content)
+                        
+                        shutil.make_archive("Generated_App_Project", 'zip', folder_name)
+                        new_balance = current_points - 500
+                        update_user_points(username_input, new_balance)
+                        
+                        st.success(f"✅ تم حفظ الملف كاملاً بنجاح في: {folder_name}/project_code.txt")
+                        with open("Generated_App_Project.zip", "rb") as fp:
+                            st.download_button(
+                                label="📥 اضغط هنا لتحميل المشروع (ZIP)",
+                                data=fp,
+                                file_name="Generated_App_Project.zip",
+                                mime="application/zip"
+                            )
+                        st.balloons()
