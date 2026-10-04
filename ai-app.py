@@ -13,7 +13,7 @@ if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stdin.reconfigure(encoding='utf-8')
 
-# 1. إعداد قاعدة البيانات وتجهيز جدول المستخدمين تلقائيًا
+# 1. إعداد قاعدة البيانات وتجهيز الجداول تلقائيًا (المستخدمين + السجل)
 def init_db():
     conn = sqlite3.connect("users_data.db")
     cursor = conn.cursor()
@@ -21,6 +21,14 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             points INTEGER
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            app_idea TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
@@ -39,7 +47,6 @@ def get_user_points(username):
 def create_user(username):
     conn = sqlite3.connect("users_data.db")
     cursor = conn.cursor()
-    # تم تعديل الرصيد الافتتاحي المجاني إلى 500 نقطة (مناسب للبدء وتجربة التطبيق)
     cursor.execute("INSERT INTO users (username, points) VALUES (?, ?)", (username, 500))
     conn.commit()
     conn.close()
@@ -50,6 +57,21 @@ def update_user_points(username, new_points):
     cursor.execute("UPDATE users SET points = ? WHERE username = ?", (new_points, username))
     conn.commit()
     conn.close()
+
+def save_user_history(username, app_idea):
+    conn = sqlite3.connect("users_data.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO history (username, app_idea) VALUES (?, ?)", (username, app_idea))
+    conn.commit()
+    conn.close()
+
+def get_user_history(username):
+    conn = sqlite3.connect("users_data.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT app_idea, timestamp FROM history WHERE username = ? ORDER BY id DESC", (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
 
 # تشغيل قاعدة البيانات عند بدء البرنامج
 init_db()
@@ -62,13 +84,12 @@ client = genai.Client()
 
 # إعداد الصفحة وتصميمها
 st.set_page_config(page_title="صانع البرامج الذكي المطور", page_icon="🤖", layout="centered")
-st.title("🤖 صانع ومقسم البرامج الآلي الذكي (الإصدار المحسن)")
+st.title("🤖 صانع ومقسم البرامج الآلي الذكي (الإصدار الاحترافي)")
 
 # 2. نظام تسجيل دخول مبسط لحفظ النقاط لكل اسم مستخدم
 st.sidebar.header("🔐 تسجيل دخول المستخدمين")
 username_input = st.sidebar.text_input("ادخل اسم المستخدم الخاص بك:", placeholder="مثال: ahmed_123").strip()
 
-# تكلفة توليد التطبيق الواحد (تم تعديلها لتكون اقتصادية ومنطقية: 150 نقطة)
 APP_COST = 150
 
 if not username_input:
@@ -85,6 +106,16 @@ else:
     # عرض النقاط الحقيقية من قاعدة البيانات في الأعلى
     st.metric(label="📊 رصيد نقاطك المتبقي في حسابك:", value=f"{current_points} نقطة")
 
+    # إضافة قسم سجل التطبيقات السابقة في الشريط الجانبي
+    st.sidebar.markdown("---")
+    st.sidebar.header("📜 سجل تطبيقاتك السابقة")
+    user_history = get_user_history(username_input)
+    if user_history:
+        for idea, time_stamp in user_history[:5]:  # عرض آخر 5 طلبات
+            st.sidebar.text(f"• {idea} \n  ({time_stamp})")
+    else:
+        st.sidebar.info("لا توجد طلبات سابقة حتى الآن.")
+
     # 3. فتح صفحة الشحن المتعددة العملات
     show_charge_page = st.sidebar.checkbox("💳 فتح صفحة شحن الرصيد")
 
@@ -94,7 +125,6 @@ else:
         
         currency = st.selectbox("🌍 اختر عملة الدفع الخاصة ببلدك:", ["الدولار الأمريكي (USD)", "الجنيه المصري (EGP)", "الريال السعودي (SAR)", "الجنيه السوداني (SDG)"])
         
-        # أسعار وباقات شحن منطقية ومتناسبة (مثلاً 1000 نقطة إضافية)
         prices = {
             "الدولار الأمريكي (USD)": "$3",
             "الجنيه المصري (EGP)": "150 EGP",
@@ -113,13 +143,12 @@ else:
     else:
         st.write(f"اكتب فكرة البرنامج الذي تريده في الأسفل (تكلفة الطلب: {APP_COST} نقطة).")
         
-        # إضافة خيار اختيار تقنية/لغة البرمجة المفضلة للمشروع
         app_tech = st.selectbox(
             "🛠️ اختر التقنية أو الإطار المفضل للمشروع:",
             ["Python (Streamlit / Flask)", "HTML / CSS / JavaScript (تطبيقات الويب)", "Python (سكربت أدوات عامة)"]
         )
         
-        app_idea = st.text_input("ما هو البرنامج أو التطبيق الذي تريد مني تصميمه وبرمجته اليوم؟", placeholder="مثال: آلة حاسبة ذكية أو نظام مهام يومية")
+        app_idea = st.text_input("ما هو البرنامج أو التطبيق الذي تريد مني تصميمه وبرمجته اليوم؟", placeholder="مثال: نظام إدارة مهام يومية")
         generate_btn = st.button("🚀 ابدأ صناعة البرنامج الآن")
 
         if generate_btn and app_idea:
@@ -160,9 +189,10 @@ else:
 
                     file_matches = re.findall(r'File:\s*([a-zA-Z0-9_\-\.]+)\s*\n+```[a-zA-Z]*\n(.*?)\n```', content, re.DOTALL)
 
-                    # خصم النقاط وتحديثها في قاعدة البيانات
+                    # خصم النقاط، حفظ السجل، وتحديث قاعدة البيانات
                     new_balance = current_points - APP_COST
                     update_user_points(username_input, new_balance)
+                    save_user_history(username_input, app_idea)
 
                     if file_matches:
                         for filename, code in file_matches:
@@ -173,7 +203,7 @@ else:
                         shutil.make_archive("Generated_App_Project", 'zip', folder_name)
                         st.success("🎉 تم إنشاء ملفات مشروعك وتوزيعها بالكامل بنجاح!")
                         
-                        # ميزة جديدة: عرض الأكواد في ألسنة (Tabs) مرتبة قبل التحميل
+                        # معاينة الأكواد مع ميزة النسخ التلقائي (Streamlit st.code يوفر زر نسخ مدمج)
                         st.subheader("👀 معاينة الأكواد المولدة للملفات:")
                         tab_names = [match[0].strip() for match in file_matches]
                         tabs = st.tabs(tab_names)
