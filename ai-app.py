@@ -6,7 +6,7 @@ import sys
 import time
 import urllib.parse
 from google import genai
-from google.genai.errors import ServerError
+from google.genai.errors import ServerError, APIError
 import streamlit as st
 import stripe  # مكتبة الدفع Stripe
 
@@ -123,7 +123,6 @@ def init_db():
             points INTEGER
         )
     """)
-    # إضافة الأعمدة تلقائياً إذا لم تكن موجودة في الجدول القديم
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
     except sqlite3.OperationalError:
@@ -201,17 +200,27 @@ if "payment" in query_params and query_params["payment"] == "success":
     st.success("🎉 تم تأكيد الدفع بنجاح عبر Stripe وتم إضافة 1000 نقطة إلى حسابك!")
     st.query_params.clear()
 
-client = genai.Client(api_key="AQ.Ab8RN6KobmCtfm99AENOn14Oz4F15rh-CVYXEScQ2vDhtfgEuA")
+# ضع مفتاح الـ API الصحيح هنا (الذي يبدأ بـ AIzaSy...)
+client = genai.Client(api_key="مفتاحك_هنا")
 
-def generate_content_with_retry(prompt_text, max_retries=5, delay=3):
+# دالة الانتظار وإعادة المحاولة التلقائية عند ضغط السيرفر
+def generate_content_with_retry(prompt_text, max_retries=10, initial_delay=5):
+    delay = initial_delay
     for attempt in range(1, max_retries + 1):
         try:
             response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=prompt_text,
             )
             return response
-        except Exception as e:
+        except (ServerError, APIError, Exception) as e:
+            error_str = str(e)
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "503" in error_str or "overloaded" in error_str.lower() or "UNAUTHENTICATED" in error_str:
+                if attempt < max_retries:
+                    st.warning(f"⏳ السيرفر مضغوط أو قيد الانتظار (محاولة {attempt}/{max_retries}). جاري الانتظار لمدة {delay} ثانية وإعادة المحاولة تلقائياً...")
+                    time.sleep(delay)
+                    delay *= 1.5  # مضاعفة وقت الانتظار تدريجياً لضمان النجاح
+                    continue
             if attempt < max_retries:
                 time.sleep(delay)
             else:
@@ -239,7 +248,6 @@ else:
             st.sidebar.error("❌ كلمة المرور غير صحيحة لهذا المستخدم!")
             st.stop()
         else:
-            # تحديث البريد الإلكتروني وكلمة المرور تلقائياً إذا دخل بيانات جديدة
             create_user(username_input, email_input, password_input)
             st.sidebar.info(f"{texts['welcome_back']} {username_input}!")
 
@@ -288,7 +296,7 @@ else:
                             'product_data': {
                                 'name': '1000 نقطة - صانع البرامج الذكي',
                             },
-                            'unit_amount': 300,  # 3.00 دولار
+                            'unit_amount': 300,
                         },
                         'quantity': 1,
                     }],
