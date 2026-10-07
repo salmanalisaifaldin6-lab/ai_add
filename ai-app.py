@@ -201,7 +201,7 @@ if "payment" in query_params and query_params["payment"] == "success":
     st.query_params.clear()
 
 # ضع مفتاح الـ API الصحيح هنا (الذي يبدأ بـ AIzaSy...)
-client = genai.Client(api_key="مفتاحك_هنا")
+client = genai.Client(api_key="AQ.Ab8RN6KobmCtfm99AENOn14Oz4F15rh-CVYXEScQ2vDhtfgEuA")
 
 # دالة الانتظار وإعادة المحاولة التلقائية عند ضغط السيرفر
 def generate_content_with_retry(prompt_text, max_retries=10, initial_delay=5):
