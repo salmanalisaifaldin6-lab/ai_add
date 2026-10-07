@@ -201,7 +201,7 @@ if "payment" in query_params and query_params["payment"] == "success":
     st.success("🎉 تم تأكيد الدفع بنجاح عبر Stripe وتم إضافة 1000 نقطة إلى حسابك!")
     st.query_params.clear()
 
-client = genai.Client(api_key="")
+client = genai.Client(api_key="AQ.Ab8RN6KobmCtfm99AENOn14Oz4F15rh-CVYXEScQ2vDhtfgEuA")
 
 def generate_content_with_retry(prompt_text, max_retries=5, delay=3):
     for attempt in range(1, max_retries + 1):
