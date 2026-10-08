@@ -11,7 +11,7 @@ import streamlit as st
 import stripe  # مكتبة الدفع Stripe
 
 # ضع مفتاحك التجريبي السري هنا (مثال: sk_test_...)
-stripe.api_key = ""
+stripe.api_key = "sk_live_9cb50732351c4358a4548359551f7168"
 
 # دعم اللغة العربية وتفادي خطأ التشفير
 if sys.platform.startswith('win'):
